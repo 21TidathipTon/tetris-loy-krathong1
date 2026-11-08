@@ -174,7 +174,6 @@
       max-height: 80vh;
       overflow-y: auto;
     }
-    pre { background: #000; padding: 10px; border-radius: 6px; font-size: 0.75rem; overflow-x: auto; color: #00ff66; }
   </style>
 </head>
 <body>
@@ -185,7 +184,6 @@
   </header>
 
   <div class="main-container">
-    <!-- Game Board & Touch Controls -->
     <div class="game-section">
       <div class="stats-panel">
         <div class="stat-box">คะแนน<span id="score">0</span></div>
@@ -204,17 +202,14 @@
       </div>
     </div>
 
-    <!-- Side Panel (Leaderboard, Comments, Settings) -->
     <div class="side-panel">
-      <!-- Leaderboard -->
       <div class="panel-card">
         <h2>🏆 อันดับสูงสุด (Leaderboard)</h2>
         <ul id="leaderboard" class="leaderboard-list">
-          <li class="leaderboard-item">กำลังโหลด...</li>
+          <li class="leaderboard-item">กำลังโหลดข้อมูลจากเซิร์ฟเวอร์...</li>
         </ul>
       </div>
 
-      <!-- Player Comment Form -->
       <div class="panel-card">
         <h2>💬 ฝากข้อความถึงผู้สร้าง</h2>
         <input type="text" id="player-name" placeholder="ชื่อของคุณ" maxlength="15">
@@ -222,16 +217,13 @@
         <button class="btn-action" onclick="submitComment()">ส่งความคิดเห็น</button>
       </div>
 
-      <!-- Creator Mode & Settings -->
       <div class="panel-card">
-        <h2>⚙️ สำหรับผู้สร้าง & การตั้งค่า</h2>
+        <h2>⚙️ สำหรับผู้สร้าง</h2>
         <button class="btn-action" style="background:#48cae4;" onclick="openCreatorModal()">🔓 เข้าสู่ระบบผู้สร้าง (Passcode)</button>
-        <button class="btn-action" style="background:#7209b7; color:white;" onclick="openGasModal()">📜 ตั้งค่า Google Apps Script (GAS)</button>
       </div>
     </div>
   </div>
 
-  <!-- Creator Modal -->
   <div id="creator-modal" class="modal">
     <div class="modal-content">
       <h2>🔒 โหมดผู้สร้าง (Creator Mode)</h2>
@@ -242,54 +234,17 @@
         <button class="btn-action" style="background:#6c757d; color:white;" onclick="closeModal('creator-modal')">ยกเลิก</button>
       </div>
       <div id="creator-view" style="display:none;">
-        <h3 style="color:var(--accent); margin-top:10px;">💬 ความคิดเห็นทั้งหมด (ถาวร)</h3>
+        <h3 style="color:var(--accent); margin-top:10px;">💬 ความคิดเห็นทั้งหมด</h3>
         <ul id="all-comments" class="comments-list" style="max-height:250px; margin-top:8px;"></ul>
         <button class="btn-action" style="background:#6c757d; color:white; margin-top:12px;" onclick="closeModal('creator-modal')">ปิดหน้าต่าง</button>
       </div>
     </div>
   </div>
 
-  <!-- GAS Modal -->
-  <div id="gas-modal" class="modal">
-    <div class="modal-content">
-      <h2>📜 การเชื่อมต่อ Google Apps Script</h2>
-      <p style="font-size:0.8rem; color:#e0e1dd; margin-bottom:8px;">วาง Web App URL ของคุณที่นี่เพื่อบันทึกข้อมูลลง Google Sheets ถาวรข้ามเครื่อง:</p>
-      <input type="text" id="gas-url-input" placeholder="https://script.google.com/macros/s/.../exec">
-      <button class="btn-action" onclick="saveGasUrl()">บันทึก Web App URL</button>
-      
-      <h3 style="color:var(--accent); margin-top:15px; font-size:0.95rem;">คัดลอกโค้ด Google Apps Script นี้ไปวางใน Google Sheets:</h3>
-      <pre id="gas-script-code">
-function doGet(e) {
-  var sheet = SpreadsheetApp.getActiveSpreadsheet();
-  var scores = sheet.getSheetByName("Scores").getDataRange().getValues();
-  var comments = sheet.getSheetByName("Comments").getDataRange().getValues();
-  return ContentService.createTextOutput(JSON.stringify({
-    scores: scores.slice(1),
-    comments: comments.slice(1)
-  })).setMimeType(ContentService.MimeType.JSON);
-}
-
-function doPost(e) {
-  var data = JSON.parse(e.postData.contents);
-  var sheet = SpreadsheetApp.getActiveSpreadsheet();
-  if (data.action === "saveScore") {
-    var sSheet = sheet.getSheetByName("Scores") || sheet.insertSheet("Scores");
-    if(sSheet.getLastRow() === 0) sSheet.appendRow(["Name", "Score", "Date"]);
-    sSheet.appendRow([data.name, data.score, new Date()]);
-  } else if (data.action === "saveComment") {
-    var cSheet = sheet.getSheetByName("Comments") || sheet.insertSheet("Comments");
-    if(cSheet.getLastRow() === 0) cSheet.appendRow(["Name", "Comment", "Date"]);
-    cSheet.appendRow([data.name, data.comment, new Date()]);
-  }
-  return ContentService.createTextOutput(JSON.stringify({result: "success"})).setMimeType(ContentService.MimeType.JSON);
-}
-      </pre>
-      <button class="btn-action" style="background:#6c757d; color:white;" onclick="closeModal('gas-modal')">ปิด</button>
-    </div>
-  </div>
-
   <script>
-    // --- GAME ENGINE ---
+    // URL ของ Google Apps Script (Web App) ของคุณ
+    const gasUrl = 'https://script.google.com/macros/s/AKfycbzrR_-1oGJOV8aG7ep5TPc_8mh1gNN-YiLuXDJefO-UZ2x3xGekUtwTHRo_zwvuSo38/exec';
+
     const canvas = document.getElementById('game-board');
     const ctx = canvas.getContext('2d');
     const ROWS = 20;
@@ -297,17 +252,16 @@ function doPost(e) {
     const BLOCK_SIZE = 20;
 
     const SHAPES = [
-      [[1, 1, 1, 1]], // I
-      [[1, 1], [1, 1]], // O
-      [[0, 1, 0], [1, 1, 1]], // T
-      [[1, 0, 0], [1, 1, 1]], // L
-      [[0, 0, 1], [1, 1, 1]], // J
-      [[0, 1, 1], [1, 1, 0]], // S
-      [[1, 1, 0], [0, 1, 1]]  // Z
+      [[1, 1, 1, 1]],
+      [[1, 1], [1, 1]],
+      [[0, 1, 0], [1, 1, 1]],
+      [[1, 0, 0], [1, 1, 1]],
+      [[0, 0, 1], [1, 1, 1]],
+      [[0, 1, 1], [1, 1, 0]],
+      [[1, 1, 0], [0, 1, 1]]
     ];
 
     const COLORS = ['#ff4d6d', '#ffb703', '#00b4d8', '#52b788', '#7209b7', '#f72585', '#4cc9f0'];
-    const SYMBOLS = ['🪷', '🕯️', '🌸', '✨', '🍃', '🌕', '🌊'];
 
     let grid = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
     let currentPiece = null;
@@ -316,7 +270,6 @@ function doPost(e) {
     let lastTime = 0;
     let gameOver = false;
 
-    let gasUrl = localStorage.getItem('loy_krathong_gas_url') || '';
     let localLeaderboard = JSON.parse(localStorage.getItem('loy_krathong_scores') || '[]');
     let localComments = JSON.parse(localStorage.getItem('loy_krathong_comments') || '[]');
 
@@ -326,7 +279,6 @@ function doPost(e) {
       return {
         shape,
         color: COLORS[typeId],
-        symbol: SYMBOLS[typeId],
         x: Math.floor(COLS / 2) - Math.ceil(shape[0].length / 2),
         y: 0
       };
@@ -380,7 +332,6 @@ function doPost(e) {
       ctx.fillStyle = '#050a18';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Draw Grid Blocks
       for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
           if (grid[r][c] !== 0) {
@@ -390,7 +341,6 @@ function doPost(e) {
         }
       }
 
-      // Draw Active Piece
       if (currentPiece) {
         ctx.fillStyle = currentPiece.color;
         currentPiece.shape.forEach((row, r) => {
@@ -478,9 +428,11 @@ function doPost(e) {
       update();
     }
 
-    // Keyboard Input
     document.addEventListener('keydown', (e) => {
       if (gameOver) return;
+      if (['ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp', ' '].includes(e.key)) {
+        e.preventDefault(); 
+      }
       if (e.key === 'ArrowLeft') moveLeft();
       else if (e.key === 'ArrowRight') moveRight();
       else if (e.key === 'ArrowDown') moveDown();
@@ -488,7 +440,6 @@ function doPost(e) {
       else if (e.key === ' ') hardDrop();
     });
 
-    // Touch Swipe Gestures
     let touchStartX = 0, touchStartY = 0;
     canvas.addEventListener('touchstart', (e) => {
       touchStartX = e.touches[0].clientX;
@@ -505,3 +456,111 @@ function doPost(e) {
         if (dy > 30) moveDown();
         else if (dy < -30) rotate();
       }
+    });
+
+    // ดึงข้อมูล Leaderboard จาก Google Sheets (แบบ Real-time)
+    async function fetchLeaderboardFromSheet() {
+      try {
+        if (!gasUrl) return;
+        
+        const response = await fetch(gasUrl);
+        const data = await response.json();
+        
+        if (data && data.length > 0) {
+          localLeaderboard = data;
+          localStorage.setItem('loy_krathong_scores', JSON.stringify(localLeaderboard));
+          renderLeaderboard();
+        } else {
+          document.getElementById('leaderboard').innerHTML = '<li class="leaderboard-item">ยังไม่มีคะแนน</li>';
+        }
+      } catch (error) {
+        console.error('Error fetching leaderboard:', error);
+        // ถ้าโหลดไม่สำเร็จ ให้เอาข้อมูลเดิมในเครื่องมาแสดงแทน
+        renderLeaderboard();
+      }
+    }
+
+    function saveScore(name, scoreVal) {
+      // โชว์อัปเดตลงเว็บล่วงหน้าเพื่อให้ดูเร็ว
+      localLeaderboard.push({ name, score: scoreVal });
+      localLeaderboard.sort((a, b) => b.score - a.score);
+      localLeaderboard = localLeaderboard.slice(0, 10);
+      renderLeaderboard();
+
+      if (gasUrl) {
+        fetch(gasUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'saveScore', name, score: scoreVal })
+        })
+        .then(() => {
+          // โหลดข้อมูลล่าสุดจาก Sheet ทันทีที่ส่งเสร็จ
+          fetchLeaderboardFromSheet();
+        })
+        .catch(err => console.error('GAS Error:', err));
+      }
+    }
+
+    function submitComment() {
+      const name = document.getElementById('player-name').value.trim() || 'ผู้เล่นนิรนาม';
+      const comment = document.getElementById('player-comment').value.trim();
+      if (!comment) return alert('กรุณากรอกข้อความ');
+
+      localComments.unshift({ name, comment, date: new Date().toLocaleDateString('th-TH') });
+      localStorage.setItem('loy_krathong_comments', JSON.stringify(localComments));
+      
+      if (gasUrl) {
+        fetch(gasUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ action: 'saveComment', name, comment })
+        }).catch(err => console.error('GAS Error:', err));
+      }
+
+      document.getElementById('player-comment').value = '';
+      alert('ส่งความคิดเห็นเรียบร้อยแล้ว!');
+    }
+
+    function renderLeaderboard() {
+      const list = document.getElementById('leaderboard');
+      list.innerHTML = localLeaderboard.map((item, idx) => 
+        `<li class="leaderboard-item"><span>${idx + 1}. ${item.name}</span><strong>${item.score}</strong></li>`
+      ).join('') || '<li class="leaderboard-item">ยังไม่มีคะแนน</li>';
+    }
+
+    function openCreatorModal() {
+      document.getElementById('creator-modal').style.display = 'flex';
+    }
+
+    function loginCreator() {
+      const pass = document.getElementById('creator-passcode').value;
+      if (pass === '671152') {
+        document.getElementById('creator-login').style.display = 'none';
+        document.getElementById('creator-view').style.display = 'block';
+        renderCreatorComments();
+      } else {
+        alert('รหัสผ่านไม่ถูกต้อง!');
+      }
+    }
+
+    function renderCreatorComments() {
+      const list = document.getElementById('all-comments');
+      list.innerHTML = localComments.map(item => 
+        `<li style="padding:6px; border-bottom:1px solid #333; font-size:0.85rem;">
+          <strong style="color:var(--accent);">${item.name}</strong> <small style="color:#aaa;">(${item.date})</small><br>${item.comment}
+        </li>`
+      ).join('') || '<li style="padding:6px;">ไม่มีความคิดเห็น</li>';
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).style.display = 'none';
+    }
+
+    // เรียกโหลด Leaderboard จาก Sheet ทันทีที่เปิดหน้าเว็บ
+    fetchLeaderboardFromSheet();
+    
+    currentPiece = createPiece();
+    update();
+  </script>
+</body>
+</html>
