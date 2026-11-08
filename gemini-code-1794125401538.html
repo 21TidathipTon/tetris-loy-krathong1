@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Loy Krathong Tetris - ลอยกระทงเททริส</title>
+  <style>
+    :root {
+      --bg-color: #0b132b;
+      --card-bg: rgba(28, 37, 65, 0.85);
+      --accent: #ffb703;
+      --accent-hover: #fb8500;
+      --text: #ffffff;
+      --text-muted: #e0e1dd;
+      --border: #48cae4;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, 'Chakra Petch';
+      background: linear-gradient(180deg, #02010a 0%, #081225 50%, #0d2847 100%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px;
+      overflow-x: hidden;
+    }
+    header { text-align: center; margin-bottom: 10px; }
+    h1 { font-size: 1.8rem; color: var(--accent); text-shadow: 0 0 10px rgba(255,183,3,0.5); }
+    p.subtitle { font-size: 0.85rem; color: #90e0ef; }
+    
+    .main-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+      max-width: 900px;
+      width: 100%;
+    }
+    .game-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      background: var(--card-bg);
+      padding: 15px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    }
+    #game-board {
+      border: 3px solid var(--border);
+      background-color: rgba(5, 10, 24, 0.9);
+      box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
+      touch-action: none;
+    }
+    .stats-panel {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      margin-bottom: 10px;
+      font-size: 0.95rem;
+      font-weight: bold;
+    }
+    .stat-box {
+      background: rgba(0,0,0,0.4);
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid rgba(72, 202, 228, 0.3);
+      text-align: center;
+      flex: 1;
+      margin: 0 4px;
+    }
+    .stat-box span { display: block; color: var(--accent); font-size: 1.1rem; }
+    
+    /* Touch Controls */
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+      width: 100%;
+      max-width: 280px;
+    }
+    .btn-ctrl {
+      background: linear-gradient(145deg, #1d3557, #457b9d);
+      color: white;
+      border: 1px solid var(--border);
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      text-align: center;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+    .btn-ctrl:active { transform: scale(0.95); background: var(--accent-hover); }
+    .btn-wide { grid-column: span 3; background: linear-gradient(145deg, #e63946, #d62828); }
+
+    /* Side Panel */
+    .side-panel {
+      flex: 1;
+      min-width: 280px;
+      max-width: 380px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .panel-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 12px;
+      border: 1px solid var(--border);
+    }
+    .panel-card h2 { font-size: 1.1rem; color: var(--accent); margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 4px; }
+    
+    /* Leaderboard */
+    .leaderboard-list, .comments-list {
+      list-style: none;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+    .leaderboard-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 0.85rem;
+    }
+    .leaderboard-item:nth-child(1) { color: #ffd700; font-weight: bold; }
+    .leaderboard-item:nth-child(2) { color: #c0c0c0; }
+    .leaderboard-item:nth-child(3) { color: #cd7f32; }
+
+    /* Inputs & Form */
+    input, textarea, button {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: rgba(0,0,0,0.5);
+      color: white;
+      font-size: 0.85rem;
+    }
+    button.btn-action {
+      background: var(--accent);
+      color: #000;
+      font-weight: bold;
+      cursor: pointer;
+      border: none;
+      margin-top: 8px;
+      transition: 0.2s;
+    }
+    button.btn-action:hover { background: var(--accent-hover); color: white; }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85);
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+      padding: 15px;
+    }
+    .modal-content {
+      background: #1c2541;
+      padding: 20px;
+      border-radius: 12px;
+      max-width: 500px;
+      width: 100%;
+      border: 2px solid var(--accent);
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    pre { background: #000; padding: 10px; border-radius: 6px; font-size: 0.75rem; overflow-x: auto; color: #00ff66; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>🌕 ลอยกระทง เททริส (Loy Krathong Tetris)</h1>
+    <p class="subtitle">เฉลิมฉลองวันเพ็ญเดือนสิบสอง เล่นได้ทุกอุปกรณ์</p>
+  </header>
+
+  <div class="main-container">
+    <!-- Game Board & Touch Controls -->
+    <div class="game-section">
+      <div class="stats-panel">
+        <div class="stat-box">คะแนน<span id="score">0</span></div>
+        <div class="stat-box">แถว<span id="lines">0</span></div>
+        <div class="stat-box">เลเวล<span id="level">1</span></div>
+      </div>
+      
+      <canvas id="game-board" width="240" height="400"></canvas>
+
+      <div class="controls-grid">
+        <div class="btn-ctrl" onclick="moveLeft()">◀</div>
+        <div class="btn-ctrl" onclick="rotate()">🔄</div>
+        <div class="btn-ctrl" onclick="moveRight()">▶</div>
+        <div class="btn-ctrl" onclick="moveDown()">▼</div>
+        <div class="btn-ctrl btn-wide" onclick="hardDrop()">💥 ลอยกระทง (Drop)</div>
+      </div>
+    </div>
+
+    <!-- Side Panel (Leaderboard, Comments, Settings) -->
+    <div class="side-panel">
+      <!-- Leaderboard -->
+      <div class="panel-card">
+        <h2>🏆 อันดับสูงสุด (Leaderboard)</h2>
+        <ul id="leaderboard" class="leaderboard-list">
+          <li class="leaderboard-item">กำลังโหลด...</li>
+        </ul>
+      </div>
+
+      <!-- Player Comment Form -->
+      <div class="panel-card">
+        <h2>💬 ฝากข้อความถึงผู้สร้าง</h2>
+        <input type="text" id="player-name" placeholder="ชื่อของคุณ" maxlength="15">
+        <textarea id="player-comment" rows="2" placeholder="แสดงความคิดเห็นที่นี่..." maxlength="100"></textarea>
+        <button class="btn-action" onclick="submitComment()">ส่งความคิดเห็น</button>
+      </div>
+
+      <!-- Creator Mode & Settings -->
+      <div class="panel-card">
+        <h2>⚙️ สำหรับผู้สร้าง & การตั้งค่า</h2>
+        <button class="btn-action" style="background:#48cae4;" onclick="openCreatorModal()">🔓 เข้าสู่ระบบผู้สร้าง (Passcode)</button>
+        <button class="btn-action" style="background:#7209b7; color:white;" onclick="openGasModal()">📜 ตั้งค่า Google Apps Script (GAS)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Creator Modal -->
+  <div id="creator-modal" class="modal">
+    <div class="modal-content">
+      <h2>🔒 โหมดผู้สร้าง (Creator Mode)</h2>
+      <div id="creator-login">
+        <p style="margin-bottom:8px; font-size:0.85rem;">กรุณากรอกรหัสผ่านผู้สร้าง:</p>
+        <input type="password" id="creator-passcode" placeholder="รหัสผ่าน 6 หลัก">
+        <button class="btn-action" onclick="loginCreator()">เข้าสู่ระบบ</button>
+        <button class="btn-action" style="background:#6c757d; color:white;" onclick="closeModal('creator-modal')">ยกเลิก</button>
+      </div>
+      <div id="creator-view" style="display:none;">
+        <h3 style="color:var(--accent); margin-top:10px;">💬 ความคิดเห็นทั้งหมด (ถาวร)</h3>
+        <ul id="all-comments" class="comments-list" style="max-height:250px; margin-top:8px;"></ul>
+        <button class="btn-action" style="background:#6c757d; color:white; margin-top:12px;" onclick="closeModal('creator-modal')">ปิดหน้าต่าง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAS Modal -->
+  <div id="gas-modal" class="modal">
+    <div class="modal-content">
+      <h2>📜 การเชื่อมต่อ Google Apps Script</h2>
+      <p style="font-size:0.8rem; color:#e0e1dd; margin-bottom:8px;">วาง Web App URL ของคุณที่นี่เพื่อบันทึกข้อมูลลง Google Sheets ถาวรข้ามเครื่อง:</p>
+      <input type="text" id="gas-url-input" placeholder="https://script.google.com/macros/s/.../exec">
+      <button class="btn-action" onclick="saveGasUrl()">บันทึก Web App URL</button>
+      
+      <h3 style="color:var(--accent); margin-top:15px; font-size:0.95rem;">คัดลอกโค้ด Google Apps Script นี้ไปวางใน Google Sheets:</h3>
+      <pre id="gas-script-code">
+function doGet(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet();
+  var scores = sheet.getSheetByName("Scores").getDataRange().getValues();
+  var comments = sheet.getSheetByName("Comments").getDataRange().getValues();
+  return ContentService.createTextOutput(JSON.stringify({
+    scores: scores.slice(1),
+    comments: comments.slice(1)
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  var data = JSON.parse(e.postData.contents);
+  var sheet = SpreadsheetApp.getActiveSpreadsheet();
+  if (data.action === "saveScore") {
+    var sSheet = sheet.getSheetByName("Scores") || sheet.insertSheet("Scores");
+    if(sSheet.getLastRow() === 0) sSheet.appendRow(["Name", "Score", "Date"]);
+    sSheet.appendRow([data.name, data.score, new Date()]);
+  } else if (data.action === "saveComment") {
+    var cSheet = sheet.getSheetByName("Comments") || sheet.insertSheet("Comments");
+    if(cSheet.getLastRow() === 0) cSheet.appendRow(["Name", "Comment", "Date"]);
+    cSheet.appendRow([data.name, data.comment, new Date()]);
+  }
+  return ContentService.createTextOutput(JSON.stringify({result: "success"})).setMimeType(ContentService.MimeType.JSON);
+}
+      </pre>
+      <button class="btn-action" style="background:#6c757d; color:white;" onclick="closeModal('gas-modal')">ปิด</button>
+    </div>
+  </div>
+
+  <script>
+    // --- GAME ENGINE ---
+    const canvas = document.getElementById('game-board');
+    const ctx = canvas.getContext('2d');
+    const ROWS = 20;
+    const COLS = 12;
+    const BLOCK_SIZE = 20;
+
+    const SHAPES = [
+      [[1, 1, 1, 1]], // I
+      [[1, 1], [1, 1]], // O
+      [[0, 1, 0], [1, 1, 1]], // T
+      [[1, 0, 0], [1, 1, 1]], // L
+      [[0, 0, 1], [1, 1, 1]], // J
+      [[0, 1, 1], [1, 1, 0]], // S
+      [[1, 1, 0], [0, 1, 1]]  // Z
+    ];
+
+    const COLORS = ['#ff4d6d', '#ffb703', '#00b4d8', '#52b788', '#7209b7', '#f72585', '#4cc9f0'];
+    const SYMBOLS = ['🪷', '🕯️', '🌸', '✨', '🍃', '🌕', '🌊'];
+
+    let grid = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+    let currentPiece = null;
+    let score = 0, lines = 0, level = 1;
+    let dropCounter = 0, dropInterval = 1000;
+    let lastTime = 0;
+    let gameOver = false;
+
+    let gasUrl = localStorage.getItem('loy_krathong_gas_url') || '';
+    let localLeaderboard = JSON.parse(localStorage.getItem('loy_krathong_scores') || '[]');
+    let localComments = JSON.parse(localStorage.getItem('loy_krathong_comments') || '[]');
+
+    function createPiece() {
+      const typeId = Math.floor(Math.random() * SHAPES.length);
+      const shape = SHAPES[typeId];
+      return {
+        shape,
+        color: COLORS[typeId],
+        symbol: SYMBOLS[typeId],
+        x: Math.floor(COLS / 2) - Math.ceil(shape[0].length / 2),
+        y: 0
+      };
+    }
+
+    function collide(grid, piece) {
+      for (let r = 0; r < piece.shape.length; r++) {
+        for (let c = 0; c < piece.shape[r].length; c++) {
+          if (piece.shape[r][c] !== 0) {
+            let newX = piece.x + c;
+            let newY = piece.y + r;
+            if (newX < 0 || newX >= COLS || newY >= ROWS) return true;
+            if (newY >= 0 && grid[newY][newX] !== 0) return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    function merge(grid, piece) {
+      piece.shape.forEach((row, r) => {
+        row.forEach((val, c) => {
+          if (val !== 0) {
+            grid[piece.y + r][piece.x + c] = piece.color;
+          }
+        });
+      });
+    }
+
+    function clearLines() {
+      let linesCleared = 0;
+      outer: for (let r = ROWS - 1; r >= 0; r--) {
+        for (let c = 0; c < COLS; c++) {
+          if (grid[r][c] === 0) continue outer;
+        }
+        const row = grid.splice(r, 1)[0].fill(0);
+        grid.unshift(row);
+        linesCleared++;
+        r++;
+      }
+      if (linesCleared > 0) {
+        lines += linesCleared;
+        score += linesCleared * 100 * level;
+        level = Math.floor(lines / 10) + 1;
+        dropInterval = Math.max(100, 1000 - (level - 1) * 80);
+        updateStats();
+      }
+    }
+
+    function draw() {
+      ctx.fillStyle = '#050a18';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw Grid Blocks
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          if (grid[r][c] !== 0) {
+            ctx.fillStyle = grid[r][c];
+            ctx.fillRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
+          }
+        }
+      }
+
+      // Draw Active Piece
+      if (currentPiece) {
+        ctx.fillStyle = currentPiece.color;
+        currentPiece.shape.forEach((row, r) => {
+          row.forEach((val, c) => {
+            if (val !== 0) {
+              ctx.fillRect((currentPiece.x + c) * BLOCK_SIZE, (currentPiece.y + r) * BLOCK_SIZE, BLOCK_SIZE - 1, BLOCK_SIZE - 1);
+            }
+          });
+        });
+      }
+    }
+
+    function update(time = 0) {
+      const deltaTime = time - lastTime;
+      lastTime = time;
+      dropCounter += deltaTime;
+
+      if (dropCounter > dropInterval) {
+        moveDown();
+      }
+
+      draw();
+      if (!gameOver) requestAnimationFrame(update);
+    }
+
+    function moveDown() {
+      currentPiece.y++;
+      if (collide(grid, currentPiece)) {
+        currentPiece.y--;
+        merge(grid, currentPiece);
+        clearLines();
+        currentPiece = createPiece();
+        if (collide(grid, currentPiece)) {
+          gameOver = true;
+          handleGameOver();
+        }
+      }
+      dropCounter = 0;
+    }
+
+    function moveLeft() {
+      currentPiece.x--;
+      if (collide(grid, currentPiece)) currentPiece.x++;
+    }
+
+    function moveRight() {
+      currentPiece.x++;
+      if (collide(grid, currentPiece)) currentPiece.x--;
+    }
+
+    function rotate() {
+      const matrix = currentPiece.shape;
+      const rotated = matrix[0].map((_, i) => matrix.map(row => row[i]).reverse());
+      const prevShape = currentPiece.shape;
+      currentPiece.shape = rotated;
+      if (collide(grid, currentPiece)) currentPiece.shape = prevShape;
+    }
+
+    function hardDrop() {
+      while (!collide(grid, currentPiece)) {
+        currentPiece.y++;
+      }
+      currentPiece.y--;
+      moveDown();
+    }
+
+    function updateStats() {
+      document.getElementById('score').innerText = score;
+      document.getElementById('lines').innerText = lines;
+      document.getElementById('level').innerText = level;
+    }
+
+    function handleGameOver() {
+      const name = prompt(`จบเกม! คุณได้คะแนน: ${score}\nกรุณากรอกชื่อของคุณเพื่อบันทึกอันดับ:`) || 'ผู้เล่นนิรนาม';
+      saveScore(name, score);
+      resetGame();
+    }
+
+    function resetGame() {
+      grid = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+      score = 0; lines = 0; level = 1; dropInterval = 1000;
+      updateStats();
+      gameOver = false;
+      currentPiece = createPiece();
+      update();
+    }
+
+    // Keyboard Input
+    document.addEventListener('keydown', (e) => {
+      if (gameOver) return;
+      if (e.key === 'ArrowLeft') moveLeft();
+      else if (e.key === 'ArrowRight') moveRight();
+      else if (e.key === 'ArrowDown') moveDown();
+      else if (e.key === 'ArrowUp') rotate();
+      else if (e.key === ' ') hardDrop();
+    });
+
+    // Touch Swipe Gestures
+    let touchStartX = 0, touchStartY = 0;
+    canvas.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    });
+
+    canvas.addEventListener('touchend', (e) => {
+      let dx = e.changedTouches[0].clientX - touchStartX;
+      let dy = e.changedTouches[0].clientY - touchStartY;
+      if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx > 30) moveRight();
+        else if (dx < -30) moveLeft();
+      } else {
+        if (dy > 30) moveDown();
+        else if (dy < -30) rotate();
+      }
