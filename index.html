@@ -117,7 +117,7 @@
     /* Leaderboard */
     .leaderboard-list, .comments-list {
       list-style: none;
-      max-height: 150px;
+      max-height: 250px;
       overflow-y: auto;
     }
     .leaderboard-item {
@@ -134,14 +134,16 @@
     /* Inputs & Form */
     input, textarea, button {
       width: 100%;
-      padding: 8px;
+      padding: 10px;
       margin-top: 5px;
       border-radius: 6px;
       border: 1px solid var(--border);
       background: rgba(0,0,0,0.5);
       color: white;
-      font-size: 0.85rem;
+      font-size: 0.95rem;
+      outline: none;
     }
+    input:focus, textarea:focus { border-color: var(--accent); }
     button.btn-action {
       background: var(--accent);
       color: #000;
@@ -168,11 +170,12 @@
       background: #1c2541;
       padding: 20px;
       border-radius: 12px;
-      max-width: 500px;
+      max-width: 400px;
       width: 100%;
       border: 2px solid var(--accent);
       max-height: 80vh;
       overflow-y: auto;
+      text-align: center;
     }
   </style>
 </head>
@@ -210,20 +213,42 @@
         </ul>
       </div>
 
-      <div class="panel-card">
-        <h2>💬 ฝากข้อความถึงผู้สร้าง</h2>
-        <input type="text" id="player-name" placeholder="ชื่อของคุณ" maxlength="15">
-        <textarea id="player-comment" rows="2" placeholder="แสดงความคิดเห็นที่นี่..." maxlength="100"></textarea>
-        <button class="btn-action" onclick="submitComment()">ส่งความคิดเห็น</button>
-      </div>
-
-      <div class="panel-card">
+      <div class="panel-card" style="margin-top: auto;">
         <h2>⚙️ สำหรับผู้สร้าง</h2>
-        <button class="btn-action" style="background:#48cae4;" onclick="openCreatorModal()">🔓 เข้าสู่ระบบผู้สร้าง (Passcode)</button>
+        <button class="btn-action" style="background:#48cae4;" onclick="openCreatorModal()">🔓 ดูความคิดเห็นผู้เล่น (Passcode)</button>
       </div>
     </div>
   </div>
 
+  <!-- Modal หน้าเริ่มเกม -->
+  <div id="start-modal" class="modal" style="display: flex;">
+    <div class="modal-content">
+      <h2 style="color: var(--accent); margin-bottom: 10px; font-size: 1.6rem;">🌕 ลอยกระทง เททริส</h2>
+      <p style="margin-bottom: 20px; font-size: 0.95rem; color: var(--text-muted);">เรียงบล็อกให้เต็มแถวเพื่อทำคะแนน แข่งกับเพื่อนๆ ในวันลอยกระทง!</p>
+      <button class="btn-action" style="font-size: 1.2rem; padding: 12px;" onclick="startGame()">▶ กดเพื่อเริ่มเกม</button>
+    </div>
+  </div>
+
+  <!-- Modal หน้าจบเกม (ส่งคะแนนพร้อมความเห็น) -->
+  <div id="game-over-modal" class="modal">
+    <div class="modal-content">
+      <h2 style="color: #ff4d6d; font-size: 1.6rem; margin-bottom: 10px;">💥 จบเกม!</h2>
+      <p style="margin-bottom: 15px; font-size: 1.1rem;">คะแนนของคุณ: <span id="final-score" style="color: var(--accent); font-weight: bold; font-size: 1.5rem;">0</span></p>
+      
+      <div style="text-align: left;">
+        <label style="font-size: 0.85rem; color: var(--text-muted);">ชื่อผู้เล่น:</label>
+        <input type="text" id="go-player-name" placeholder="กรอกชื่อของคุณ..." maxlength="15" style="margin-bottom: 10px;">
+        
+        <label style="font-size: 0.85rem; color: var(--text-muted);">ฝากข้อความถึงผู้สร้าง (ไม่บังคับ):</label>
+        <textarea id="go-player-comment" rows="3" placeholder="เล่นแล้วรู้สึกอย่างไร..." style="margin-bottom: 10px; resize: none;"></textarea>
+      </div>
+
+      <button class="btn-action" onclick="submitGameOver()">บันทึกคะแนน & ข้อความ</button>
+      <button class="btn-action" style="background:#6c757d; color:white;" onclick="skipGameOver()">ข้าม / เล่นใหม่</button>
+    </div>
+  </div>
+
+  <!-- Modal สำหรับผู้สร้าง -->
   <div id="creator-modal" class="modal">
     <div class="modal-content">
       <h2>🔒 โหมดผู้สร้าง (Creator Mode)</h2>
@@ -233,8 +258,8 @@
         <button class="btn-action" onclick="loginCreator()">เข้าสู่ระบบ</button>
         <button class="btn-action" style="background:#6c757d; color:white;" onclick="closeModal('creator-modal')">ยกเลิก</button>
       </div>
-      <div id="creator-view" style="display:none;">
-        <h3 style="color:var(--accent); margin-top:10px;">💬 ความคิดเห็นทั้งหมด</h3>
+      <div id="creator-view" style="display:none; text-align: left;">
+        <h3 style="color:var(--accent); margin-top:10px; text-align: center;">💬 ความคิดเห็นทั้งหมด</h3>
         <ul id="all-comments" class="comments-list" style="max-height:250px; margin-top:8px;"></ul>
         <button class="btn-action" style="background:#6c757d; color:white; margin-top:12px;" onclick="closeModal('creator-modal')">ปิดหน้าต่าง</button>
       </div>
@@ -242,7 +267,6 @@
   </div>
 
   <script>
-    // URL ของ Google Apps Script (Web App) ของคุณ
     const gasUrl = 'https://script.google.com/macros/s/AKfycbzrR_-1oGJOV8aG7ep5TPc_8mh1gNN-YiLuXDJefO-UZ2x3xGekUtwTHRo_zwvuSo38/exec';
 
     const canvas = document.getElementById('game-board');
@@ -269,6 +293,8 @@
     let dropCounter = 0, dropInterval = 1000;
     let lastTime = 0;
     let gameOver = false;
+    let gameStarted = false;
+    let animationId = null;
 
     let localLeaderboard = JSON.parse(localStorage.getItem('loy_krathong_scores') || '[]');
     let localComments = JSON.parse(localStorage.getItem('loy_krathong_comments') || '[]');
@@ -353,7 +379,9 @@
       }
     }
 
-    function update(time = 0) {
+    function update(time = performance.now()) {
+      if (!gameStarted || gameOver) return;
+
       const deltaTime = time - lastTime;
       lastTime = time;
       dropCounter += deltaTime;
@@ -363,10 +391,11 @@
       }
 
       draw();
-      if (!gameOver) requestAnimationFrame(update);
+      animationId = requestAnimationFrame(update);
     }
 
     function moveDown() {
+      if (!gameStarted || gameOver) return;
       currentPiece.y++;
       if (collide(grid, currentPiece)) {
         currentPiece.y--;
@@ -374,7 +403,6 @@
         clearLines();
         currentPiece = createPiece();
         if (collide(grid, currentPiece)) {
-          gameOver = true;
           handleGameOver();
         }
       }
@@ -382,16 +410,19 @@
     }
 
     function moveLeft() {
+      if (!gameStarted || gameOver) return;
       currentPiece.x--;
       if (collide(grid, currentPiece)) currentPiece.x++;
     }
 
     function moveRight() {
+      if (!gameStarted || gameOver) return;
       currentPiece.x++;
       if (collide(grid, currentPiece)) currentPiece.x--;
     }
 
     function rotate() {
+      if (!gameStarted || gameOver) return;
       const matrix = currentPiece.shape;
       const rotated = matrix[0].map((_, i) => matrix.map(row => row[i]).reverse());
       const prevShape = currentPiece.shape;
@@ -400,6 +431,7 @@
     }
 
     function hardDrop() {
+      if (!gameStarted || gameOver) return;
       while (!collide(grid, currentPiece)) {
         currentPiece.y++;
       }
@@ -413,23 +445,63 @@
       document.getElementById('level').innerText = level;
     }
 
-    function handleGameOver() {
-      const name = prompt(`จบเกม! คุณได้คะแนน: ${score}\nกรุณากรอกชื่อของคุณเพื่อบันทึกอันดับ:`) || 'ผู้เล่นนิรนาม';
-      saveScore(name, score);
-      resetGame();
-    }
-
-    function resetGame() {
+    // ----------------------------------------------------
+    // ระบบเริ่มเกม และ จบเกม
+    // ----------------------------------------------------
+    
+    function startGame() {
+      document.getElementById('start-modal').style.display = 'none';
+      
+      // รีเซ็ตกระดานใหม่
       grid = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
       score = 0; lines = 0; level = 1; dropInterval = 1000;
       updateStats();
-      gameOver = false;
+      
       currentPiece = createPiece();
+      gameOver = false;
+      gameStarted = true;
+      dropCounter = 0;
+      lastTime = performance.now();
+      
+      cancelAnimationFrame(animationId);
       update();
     }
 
+    function handleGameOver() {
+      gameOver = true;
+      gameStarted = false;
+      
+      // แสดงคะแนนในหน้าต่างจบเกม
+      document.getElementById('final-score').innerText = score;
+      document.getElementById('game-over-modal').style.display = 'flex';
+    }
+
+    function submitGameOver() {
+      const name = document.getElementById('go-player-name').value.trim() || 'ผู้เล่นนิรนาม';
+      const comment = document.getElementById('go-player-comment').value.trim();
+      
+      saveScore(name, score, comment);
+      
+      document.getElementById('game-over-modal').style.display = 'none';
+      document.getElementById('go-player-name').value = '';
+      document.getElementById('go-player-comment').value = '';
+      
+      // กลับไปหน้าเริ่มเกม
+      document.getElementById('start-modal').style.display = 'flex';
+      draw(); // วาดกระดานทิ้งท้ายไว้
+    }
+
+    function skipGameOver() {
+      document.getElementById('game-over-modal').style.display = 'none';
+      document.getElementById('start-modal').style.display = 'flex';
+    }
+
+    // ----------------------------------------------------
+    // ควบคุมด้วยคีย์บอร์ดและสัมผัส
+    // ----------------------------------------------------
+    
     document.addEventListener('keydown', (e) => {
-      if (gameOver) return;
+      if (gameOver || !gameStarted) return;
       if (['ArrowLeft', 'ArrowRight', 'ArrowDown', 'ArrowUp', ' '].includes(e.key)) {
         e.preventDefault(); 
       }
@@ -447,6 +519,7 @@
     });
 
     canvas.addEventListener('touchend', (e) => {
+      if (gameOver || !gameStarted) return;
       let dx = e.changedTouches[0].clientX - touchStartX;
       let dy = e.changedTouches[0].clientY - touchStartY;
       if (Math.abs(dx) > Math.abs(dy)) {
@@ -458,11 +531,13 @@
       }
     });
 
-    // ดึงข้อมูล Leaderboard จาก Google Sheets (แบบ Real-time)
+    // ----------------------------------------------------
+    // ดึงและส่งข้อมูล Google Sheets
+    // ----------------------------------------------------
+    
     async function fetchLeaderboardFromSheet() {
       try {
         if (!gasUrl) return;
-        
         const response = await fetch(gasUrl);
         const data = await response.json();
         
@@ -475,50 +550,32 @@
         }
       } catch (error) {
         console.error('Error fetching leaderboard:', error);
-        // ถ้าโหลดไม่สำเร็จ ให้เอาข้อมูลเดิมในเครื่องมาแสดงแทน
         renderLeaderboard();
       }
     }
 
-    function saveScore(name, scoreVal) {
-      // โชว์อัปเดตลงเว็บล่วงหน้าเพื่อให้ดูเร็ว
+    function saveScore(name, scoreVal, commentText) {
+      // อัปเดต Leaderboard โลคอลให้เห็นก่อน
       localLeaderboard.push({ name, score: scoreVal });
       localLeaderboard.sort((a, b) => b.score - a.score);
       localLeaderboard = localLeaderboard.slice(0, 10);
       renderLeaderboard();
 
+      if (commentText) {
+        localComments.unshift({ name, comment: commentText, date: new Date().toLocaleDateString('th-TH') });
+        localStorage.setItem('loy_krathong_comments', JSON.stringify(localComments));
+      }
+
       if (gasUrl) {
+        // ส่งคะแนนและคอมเมนต์ไปใน request เดียวกัน
         fetch(gasUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action: 'saveScore', name, score: scoreVal })
+          body: JSON.stringify({ action: 'saveScore', name: name, score: scoreVal, comment: commentText })
         })
-        .then(() => {
-          // โหลดข้อมูลล่าสุดจาก Sheet ทันทีที่ส่งเสร็จ
-          fetchLeaderboardFromSheet();
-        })
+        .then(() => fetchLeaderboardFromSheet()) // โหลดอันดับล่าสุด
         .catch(err => console.error('GAS Error:', err));
       }
-    }
-
-    function submitComment() {
-      const name = document.getElementById('player-name').value.trim() || 'ผู้เล่นนิรนาม';
-      const comment = document.getElementById('player-comment').value.trim();
-      if (!comment) return alert('กรุณากรอกข้อความ');
-
-      localComments.unshift({ name, comment, date: new Date().toLocaleDateString('th-TH') });
-      localStorage.setItem('loy_krathong_comments', JSON.stringify(localComments));
-      
-      if (gasUrl) {
-        fetch(gasUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action: 'saveComment', name, comment })
-        }).catch(err => console.error('GAS Error:', err));
-      }
-
-      document.getElementById('player-comment').value = '';
-      alert('ส่งความคิดเห็นเรียบร้อยแล้ว!');
     }
 
     function renderLeaderboard() {
@@ -556,11 +613,9 @@
       document.getElementById(id).style.display = 'none';
     }
 
-    // เรียกโหลด Leaderboard จาก Sheet ทันทีที่เปิดหน้าเว็บ
+    // เรียกตอนโหลดหน้าเว็บ
     fetchLeaderboardFromSheet();
-    
-    currentPiece = createPiece();
-    update();
+    draw(); // วาดกระดานเปล่ารอไว้
   </script>
 </body>
 </html>
